@@ -1,0 +1,10 @@
+version: "3"
+services:
+  rstudio:
+    image: ymattu/mecab-d
+    ports:
+      - 8787:8787
+    volumes:
+      - ./data:/home/rstudio/code/
+    environment:
+      PASSWORD: hoge

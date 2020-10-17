@@ -1,0 +1,138 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+
+singleString <- paste(readLines("sotsuken/16siryou-o7.txt"), collapse="\n")
+install.packages("tidyverse")
+library(tidyverse)
+
+waste <- c("、", "…", "「", "」", "。", "\n")
+removedString <- singleString
+for (w in waste) {
+  removedString <- gsub(w, "", removedString)
+}
+attendees <- c("R1", "R2", "R3", "Ａ", "Ｂ", "Ｃ", "Ｄ", "Ｅ", "Ｆ", "Ｇ", "Ｈ", "Ｉ", "Ｊ")
+
+
+remarks <- c(removedString)
+
+for (a in attendees) {
+  tmp <- c()
+  for (s in remarks) {
+    hoge <- flatten(strsplit(s, a))
+    tmp <-c(tmp, hoge)
+  }
+  remarks <- flatten(tmp)
+}
+
+for (i in length(remarks)) {
+  remarks[i] <- unlist(remarks[i])  
+}
+
+# remarks
+
+# TODO: 発言者の紐付け
+
+# -----------形態素解析-----------
+
+
+library(RMeCab)
+
+word <- remarks[100]
+res <- RMeCabC(word)
+# res <- unlist(res)
+
+filterMorphene <- function(morphenes) {
+  pattern <- "名詞|^動詞|形容詞" 
+  result <- c()
+  for (m in morphenes) {
+    if (is.null(names(m))) {
+      next
+    }
+    if (grepl(pattern, names(m))) {
+      result <- c(result, m)
+    }
+  }
+  return(result)
+}
+
+filteredRemarks <- c()
+for (r in remarks) {
+  mor <- RMeCabC(r)
+  filteredRemarks <- c(filteredRemarks, list(unname(unlist(filterMorphene(mor)))))
+}
+
+filteredRemarks
+
+# -------------------------------
+
+
+# --------------共起分析-----------------
+
+remark1 <- c()
+remark2 <- c()
+counts <- c()
+
+for (i in 1:length(filteredRemarks)) {
+  r1 <- unlist(filteredRemarks[i])
+  for (j in i+1:length(filteredRemarks)) {
+    inte <- intersect(r1, unlist(filteredRemarks[j]))
+    if (length(inte) > 0) {
+      # print(paste(i, ",", j, ":", length(inte)))
+      # print(inte)
+      remark1 <- c(remark1, i)
+      remark2 <- c(remark2, j)
+      counts <- c(counts, length(inte)) 
+    }
+  }
+}
+counts_df <- data.frame(REMARK1=remark1, REMARK2=remark2, COUNTS=counts)
+nrow(counts_df)
+
+counts_df
+
+adjacency_df <- data.frame(matrix(0, length(remarks), length(remarks)))
+adjacency_df[1,2]
+
+for (i in 1:nrow(counts_df)) {
+  rem <- counts_df[i,]
+  adjacency_df[rem$REMARK1, rem$REMARK2] = rem$COUNT
+}
+
+
+library(igraph)
+
+net <- graph_from_incidence_matrix(adjacency_df, directed=T)
+
+# net <- simplify(net, remove.multiple = F, remove.loops = T)
+dg <- decompose.graph(net)
+main_net <- dg[[1]]
+
+#main_net.bw <- betweenness(main_net, directed=T)
+#plot(main_net, vertex.size = main_net.bw*0.01, vertex.label = NA)
+
+plot(main_net, vertex.size = 3, vertex.label = NA, edge.arrow.size=.4, edge.width=.4, edge.curved=.1)
+
+is_directed(main_net)
+
+
+png("sotsuken/plot1.png", width = 2048, height = 2048)
+plot(main_net, vertex.size = 1, vertex.label = NA, edge.arrow.size=.4, edge.width=.4, edge.curved=.1)
+dev.off()
+

@@ -1,0 +1,65 @@
+```{r}
+remarks_df = read.csv("./demo1-1.csv")
+library(RMeCab)
+
+raw_mor = list()
+morphenes = list()
+for(r in remarks_df$remark) {
+  mor = RMeCabC((r))
+  morphenes = append(morphenes, list(mor[names(unlist(mor)) == "名詞" | names(unlist(mor)) == "動詞" | names(unlist(mor)) == "形容詞"])) 
+  raw_mor = append(raw_mor, list(mor))
+}
+
+adjacency_df <- data.frame(matrix(0, length(morphenes), length(morphenes)))
+for (i in 1:length(morphenes)) {
+  r1 <- unlist(morphenes[i])
+  for (j in i+1:length(morphenes)) {
+    inte <- intersect(r1, unlist(morphenes[j]))
+    if (length(inte) > 0) {
+      adjacency_df[i, j] = length(inte)
+    }
+  }
+}
+
+library(igraph)
+net <- graph_from_adjacency_matrix(as.matrix(adjacency_df) , mode="directed")
+
+plot(net, vertex.size = 3, vertex.label = NA, edge.arrow.size=.2, edge.width=.4, edge.curved=.1) #1
+
+bt = betweenness(net)
+deg = degree(net, mode="out")
+
+remarks_bt_df = remarks_df
+remarks_bt_df$betweenness = bt
+remarks_deg_df = remarks_df
+remarks_deg_df$degree = deg
+
+
+install.packages("doBy")
+library(doBy)
+
+which.maxn(bt, n=10)
+which.maxn(deg, n=10)
+
+attendees = unique(remarks_df$attendee)
+
+library(dplyr)
+# filter(remarks_df, attendee == "程")
+
+#tei = filter(remarks_bt_df, attendee == "程")
+#plot(tei$index, tei$betweenness, type="b", col="royalblue3", pch=15, cex=2, lwd=2, lty=1)
+
+for (a in attendees) {
+  target_bw_df = filter(remarks_bt_df, attendee == a)
+  plot(target_bw_df$index, target_bw_df$betweenness, type="b", col="royalblue3", pch=15, cex=2, lwd=2, lty=1)
+  title(paste("Betweeness: ", a))
+}
+
+for (a in attendees) {
+  target_deg_df = filter(remarks_deg_df, attendee == a)
+  plot(target_deg_df$index, target_deg_df$degree, type="b", col="royalblue3", pch=15, cex=2, lwd=2, lty=1)
+  title(paste("OutDegree: ", a))
+}
+
+```
+
