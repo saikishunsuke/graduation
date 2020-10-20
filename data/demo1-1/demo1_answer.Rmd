@@ -1,0 +1,65 @@
+```{r}
+pre_df = read.csv("./tei_pre.csv")
+mid_df = read.csv("./tei_mid.csv")
+pas_df = read.csv("./tei_pas.csv")
+ans_df = read.csv("./answer_demo1.csv")
+```
+
+```{r}
+pas_df
+```
+
+```{r}
+sum_err = function(df){ 
+  err = 0
+  for(i in 1:nrow(df)){
+    r = df[i,]
+    item_name = toString(r$item)
+    ans_r = filter(ans_df, item==item_name)
+    err = err + abs(r$rank - ans_r$rank)
+  }
+  return(err)
+}
+```
+
+```{r}
+sum_err(pre_df)
+sum_err(mid_df)
+sum_err(pas_df)
+```
+
+```{r}
+ans_copas = c()
+for(i in 1:nrow(ans_df)){
+  mor = RMeCabC(ans_df[i,]$reason)
+  ans_copas = append(ans_copas, list(mor[names(unlist(mor)) == "名詞" | names(unlist(mor)) == "動詞" | names(unlist(mor)) == "形容詞"])) 
+}
+ans_df$morphenes = ans_copas
+
+counts = 0
+for(i in 1:nrow(pas_df)){
+  r = pre_df[i,]
+  item_name = toString(r$item)
+  ans_r = filter(ans_df, item==item_name)
+  mor = RMeCabC(r$reason)
+  morphenes = list(mor[names(unlist(mor)) == "名詞" | names(unlist(mor)) == "動詞" | names(unlist(mor)) == "形容詞"])
+  print("tar")
+  print(unlist(morphenes))
+  print("ans")
+  print(unlist(ans_r$morphenes))
+  counts = counts + length(intersect(unlist(morphenes), unlist(ans_r$morphenes)))
+}
+counts
+```
+```{r}
+prefix = c("tom", "tok", "tei", "kom")
+kind = c("_pre", "_mid", "_pos")
+for(p in prefix){
+  for(k in kind){
+    path = paste("./", p, k, ".csv", sep = "")
+    df = read.csv(path)
+    print(paste(path, sum_err(df)))
+  }
+}
+```
+
