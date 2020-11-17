@@ -280,7 +280,7 @@ analyze("./demo1-2.csv")
 ```
 
 ```{r}
-analyze("./demo1-1.csv")
+analyze("./data/demo1-1.csv")
 ```
 
 

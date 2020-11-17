@@ -1,8 +1,8 @@
 ```{r}
-pre_df = read.csv("./tei_pre.csv")
-mid_df = read.csv("./tei_mid.csv")
-pas_df = read.csv("./tei_pas.csv")
-ans_df = read.csv("./answer_demo1.csv")
+pre_df = read.csv("./data/tei_pre.csv")
+mid_df = read.csv("./data/tei_mid.csv")
+pas_df = read.csv("./data/tei_pos.csv")
+ans_df = read.csv("./data/answer_demo1.csv")
 ```
 
 ```{r}
@@ -37,29 +37,161 @@ for(i in 1:nrow(ans_df)){
 ans_df$morphenes = ans_copas
 
 counts = 0
-for(i in 1:nrow(pas_df)){
-  r = pre_df[i,]
+for(i in 1:nrow(mid_df)){
+  r = pas_df[i,]
   item_name = toString(r$item)
   ans_r = filter(ans_df, item==item_name)
   mor = RMeCabC(r$reason)
   morphenes = list(mor[names(unlist(mor)) == "名詞" | names(unlist(mor)) == "動詞" | names(unlist(mor)) == "形容詞"])
-  print("tar")
-  print(unlist(morphenes))
-  print("ans")
-  print(unlist(ans_r$morphenes))
-  counts = counts + length(intersect(unlist(morphenes), unlist(ans_r$morphenes)))
+  # print("tar")
+  # print(unlist(morphenes))
+  # print("ans")
+  # print(unlist(ans_r$morphenes))
+  print(intersect(unlist(morphenes), answer_like_morphenes_list))
+  counts = counts + length(intersect(unlist(morphenes), answer_like_morphenes_list))
 }
-counts
+
+count_intersect = function(df){
+  counts = 0
+  for(i in 1:nrow(df)){
+    r = df[i,]
+    item_name = toString(r$item)
+    mor = RMeCabC(r$reason)
+    morphenes = list(mor[names(unlist(mor)) == "名詞" | names(unlist(mor)) == "動詞" | names(unlist(mor)) == "形容詞"])
+    print(r$reason)
+    print(intersect(unlist(morphenes), answer_like_morphenes_list))
+    counts = counts + length(intersect(unlist(morphenes), answer_like_morphenes_list))
+  }
+  return(counts)
+}
+
+count_intersect(pre_df)
 ```
+
 ```{r}
+
+result_df = data.frame(matrix(ncol = 3, nrow = 0))
 prefix = c("tom", "tok", "tei", "kom")
+prefix_rel = list(tom="富田", tok="徳永", tei="程", kom="小松")
 kind = c("_pre", "_mid", "_pos")
+cn = c("pre", "mid", "pos")
+colnames(result_df) = cn
 for(p in prefix){
+  res = c()
   for(k in kind){
-    path = paste("./", p, k, ".csv", sep = "")
+    path = paste("./data/", p, k, ".csv", sep = "")
     df = read.csv(path)
     print(paste(path, sum_err(df)))
+    res = c(res, sum_err(df))
   }
+  result_df[unlist(prefix_rel[p]), ] = res
 }
+result_df
+
+sub_df = data.frame(matrix(ncol = 2, nrow = 0))
+colnames(sub_df) = c("first", "second")
+for(a in rownames(result_df)){
+  r = result_df[a,]
+  first = r$pre - r$mid
+  second = r$mid- r$pos
+  sub_df[a,] = c(first, second)
+}
+sub_df
+```
+
+```{r}
+reason_result_df = data.frame(matrix(ncol = 3, nrow = 0))
+colnames(reason_result_df) = cn
+for(p in prefix){
+  res = c()
+  for(k in kind){
+    path = paste("./data/", p, k, ".csv", sep = "")
+    df = read.csv(path)
+    print(paste(path, sum_err(df)))
+    res = c(res, count_intersect(df))
+  }
+  reason_result_df[unlist(prefix_rel[p]),] = res
+}
+reason_result_df
+
+reason_sub_df = data.frame(matrix(ncol = 2, nrow = 0))
+colnames(reason_sub_df) = c("first", "second")
+for(a in rownames(reason_result_df)){
+  r = reason_result_df[a,]
+  first = r$mid - r$pre
+  second = r$pos- r$mid
+  reason_sub_df[a,] = c(first, second)
+}
+reason_sub_df
+```
+
+```{r}
+res1_1
+res1_2
+
+cor_df = data.frame(matrix(ncol = 3, nrow = 0))
+colnames(cor_df) = c("bet", "out_deg", "in_deg")
+
+for(a in rownames(res1_1)){
+  b = c(res1_1[a,]$bet, res1_2[a,]$bet)
+  o = c(res1_1[a,]$out_deg, res1_2[a,]$out_deg)
+  i = c(res1_1[a,]$in_deg, res1_2[a,]$in_deg)
+  ans = c(sub_df[a,]$first, sub_df[a, ]$second)
+  cor_df[a, ] = c(cor(ans, b), cor(ans, o), cor(ans, i))
+}
+cor(ans, b)
+
+cor_df
+
+t1 = c(1, 4)
+t2 = c(5, 3)
+cor(t1, t2)
+```
+```{r}
+calc_s = function(x){
+  return(((x - mean(x))/sd(x))*10 + 50)
+}
+
+bet = res1_2$bet
+s = ((bet - mean(bet))/sd(bet))*10 + 50
+s
+
+sub_df$first_s = calc_s(sub_df$first)
+sub_df$second_s = calc_s(sub_df$second)
+sub_df
+
+res1_1$bet_s = calc_s(res1_1$bet)
+res1_1$out_deg_s = calc_s(res1_1$out_deg)
+res1_1$in_deg_s = calc_s(res1_1$in_deg)
+res1_1
+
+for(a in rownames(res1_1)){
+  print(res1_1[a,]$bet_s - sub_df[a,]$first_s)
+}
+
+for(a in rownames(res1_1)){
+  print(res1_1[a,]$out_deg_s - sub_df[a,]$first_s)
+}
+
+for(a in rownames(res1_1)){
+  print(res1_1[a,]$in_deg_s - sub_df[a,]$first_s)
+}
+```
+
+```{r}
+length(static_answer)
+length(answer_like_morphenes_list)
+```
+
+```{r}
+res1_1
+res1_2
+```
+
+```{r}
+result_df
+reason_result_df
+sub_df
+reason_sub_df
 ```
 

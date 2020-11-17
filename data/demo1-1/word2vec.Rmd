@@ -1,0 +1,175 @@
+```{r}
+#source("http://rmecab.jp/R/Aozora.R")
+#uchuu <- Aozora(url = "https://www.aozora.gr.jp/cards/000226/files/1150_ruby_38564.zip") 
+library(RMeCab)
+library(dplyr)
+library(purrr)
+
+#tf <- tempfile()
+#RMeCabText(uchuu) %>% map(function(x)
+#  ifelse( (x[[2]] %in% c("名詞", "形容詞", "動詞"))  && 
+#            (!x[[3]] %in% c("数", "非自立", "代名詞","接尾") ) && (x[[8]] != "*"), 
+#          x[[8]],  ""))  %>%  paste(" ", collapse = "") %>%
+#  write(file = tf, append = TRUE)
+#file.show(tf)
+
+devtools::install_github("bmschmidt/wordVectors")
+library(wordVectors)
+# model <- train_word2vec(tf,"tf.bin", min_count = 2)
+# model %>% closest_to("宇宙")
+```
+
+```{r}
+wiki_model = read.binary.vectors("../db/entity_vector/entity_vector.model.bin")
+```
+
+```{r}
+words = wiki_model %>% nearest_to("寒暖", n=200) %>% round(3)
+ws = names(words[words < 0.5])
+unique(unlist(lapply(ws, function(x){gsub("\\[|\\]", "", x)})))
+```
+
+```{r}
+similars = function(word){
+  words = wiki_model %>% nearest_to(word, n=200)
+  similar_words = names(words[words < 0.5])
+  return(unique(unlist(lapply(similar_words, function(x){gsub("\\[|\\]", "", x)}))))
+}
+```
+
+```{r}
+similars("運ぶ")
+```
+
+```{r}
+answer_reason_list = read.csv("./data/answer_demo1.csv")$reason
+answer_morphenes_list = c()
+
+for(r in answer_reason_list){
+  mor = RMeCabC(r, 1)
+  answer_morphenes_list = c(answer_morphenes_list, mor[names(unlist(mor)) == "名詞" | names(unlist(mor)) == "動詞" | names(unlist(mor)) == "形容詞"])
+}
+answer_morphenes_list = unlist(unique(answer_morphenes_list[!answer_morphenes_list %in% c("する", "こと", "ある")]))
+
+# -------------Mine is Here------------
+#answer_like_morphenes_list= c()
+#for (i in 1:length(answer_morphenes_list)){
+#  print(paste(i, "/", length(answer_morphenes_list)))
+#  answer_like_morphenes_list = c(answer_like_morphenes_list, similars(answer_morphenes_list[i])) 
+#}
+# -------------------------------------
+
+answer_like_morphenes_list=unique(answer_like_morphenes_list[!answer_like_morphenes_list %in% c("する", "こと", "ある", "の", "なる")])
+
+
+```
+```{r}
+static_answer = c("酸素", "エネルギー", "補給", "崖", "高さ", "測る", "けが人", "運ぶ", "太陽光", "遮断", "寒暖", "発射", "反動", "前進", "宇宙食", "かさばる", "生存", "必要", "現在地", "確かめる", "炭酸", "ガスボンベ", "推進力", "月面", "磁気", "母船", "救難信号", "宇宙服", "特殊孔", "ビタミン剤", "薬", "FM", "近距離")
+
+static_answer_map = list()
+
+answer_like_morphenes_list= c()
+for (i in 1:length(static_answer)){
+  print(paste(i, "/", length(static_answer)))
+  answer_like_morphenes_list = c(answer_like_morphenes_list, similars(static_answer[i])) 
+}
+
+# lapply(answer_like_morphenes_list, write, "./data/answer_like_morphenes.txt", append=TRUE)
+```
+
+```{r}
+answer_like_morphenes_list = scan("./data/answer_like_morphenes.txt", character(), quote = "")
+analyze = function(path) {
+  remarks_df = read.csv(path)
+  raw_mor = list()
+  morphenes = list()
+  for(r in remarks_df$remark) {
+    mor = RMeCabC(r, 1)
+    morphenes = append(morphenes, list(mor[names(unlist(mor)) == "名詞" | names(unlist(mor)) == "動詞" | names(unlist(mor)) == "形容詞"])) 
+    raw_mor = append(raw_mor, list(mor))
+  }
+
+  adjacency_df <- data.frame(matrix(0, length(morphenes), length(morphenes)))
+  tmp = list()
+  for (i in 1:length(morphenes)) {
+    r1 <- unlist(morphenes[i]) 
+    im = list()
+    for (j in i+1:length(morphenes)) {
+      inte <- intersect(r1, unlist(morphenes[j]))
+      inte <- intersect(inte, answer_like_morphenes_list)
+      if (length(inte) > 0) {
+        adjacency_df[i, j] = length(inte)
+        im = append(im, inte)
+        #print(inte)
+      }
+    }
+    tmp = append(tmp, list(im))
+  }
+  print(adjacency_df)
+
+  net <- graph_from_adjacency_matrix(as.matrix(adjacency_df) , mode="directed")
+
+  plot(net, vertex.size = 3, vertex.label = NA, edge.arrow.size=.2, edge.width=.4, edge.curved=.1) #1
+
+  bt = betweenness(net)
+  deg = degree(net, mode="out")
+  in_deg = degree(net, mode="in")
+
+  remarks_bt_df = remarks_df
+  remarks_bt_df$betweenness = bt
+  remarks_deg_df = remarks_df
+  remarks_deg_df$degree = deg
+  remarks_in_deg_df = remarks_df
+  remarks_in_deg_df$degree = in_deg
+
+  attendees = unique(remarks_df$attendee)
+  
+  important_remarks_index = c()
+  for (a in attendees) {
+    target_bw_df = filter(remarks_bt_df, attendee == a)
+    plot(target_bw_df$index, target_bw_df$betweenness, type="b", col="royalblue3", pch=15, cex=2, lwd=2, lty=1)
+    title(paste("Betweeness: ", a))
+  }
+  
+  for (a in attendees) {
+    target_deg_df = filter(remarks_deg_df, attendee == a)
+    plot(target_deg_df$index, target_deg_df$degree, type="b", col="royalblue3", pch=15, cex=2, lwd=2, lty=1)
+    title(paste("OutDegree: ", a))
+  }
+  
+  for (a in attendees) {
+    target_in_deg_df = filter(remarks_in_deg_df, attendee == a)
+    plot(target_in_deg_df$index, target_in_deg_df$degree, type="b", col="royalblue3", pch=15, cex=2, lwd=2, lty=1)
+    title(paste("InDegree: ", a))
+  }
+  
+  result_df <- data.frame(matrix(ncol = 3, nrow = 0))
+  colnames(result_df) = c("bet", "out_deg", "in_deg")
+  for(a in attendees){
+    bet = mean(filter(filter(remarks_bt_df, attendee==a), betweenness>0)$betweenness)
+    out_deg = mean(filter(filter(remarks_deg_df, attendee==a), degree>0)$degree)
+    in_deg = mean(filter(filter(remarks_in_deg_df, attendee==a), degree>0)$degree)
+    print(bet, out_deg, in_deg)
+    result_df[a,] = c(bet, out_deg, in_deg)
+  }
+  return(result_df)
+}
+```
+
+```{r}
+res1_1 = analyze("./data/demo1-1.csv")
+length(answer_like_morphenes_list)
+res1_1
+```
+```{r}
+res1_2 = analyze("./data/demo1-2.csv")
+```
+
+
+
+```{r}
+remarks_df = read.csv("./data/demo1-1.csv")
+filter(remarks_df, attendee == "程")
+remarks_df[36,]$remark
+```
+
