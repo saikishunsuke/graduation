@@ -1,0 +1,60 @@
+
+```{r}
+attendees = c("小林", "吉森", "安田")
+answer_morphenes_list = scan("./data/answer_like_morphenes2.txt", character(), quote = "")
+prefix = c("kob", "yos", "yas")
+suffix = c("pre", "mid", "pos")
+ans_df = read.csv("./data/answer.csv")
+```
+
+```{r}
+df = create_kyoki_net("../demo2/data/demo2-1.csv")
+tes_df1 = analyze_df(attendees, df)
+
+df = create_kyoki_net("../demo2/data/demo2-2.csv")
+tes_df2 = analyze_df(attendees, df)
+```
+
+
+```{r}
+analyze_rank("./data", prefix, suffix)
+ans_df_rank = analyze_rank2("./data", prefix, suffix)
+ans_df_rank_3 = analyze_rank3("./data", prefix, suffix)
+analyze_reason("./data", prefix, suffix)
+ans_df_right = analyze_right("./data", prefix, suffix)
+ans_df_right_2 = analyze_right2("./data", prefix, suffix)
+
+ans_leven = analyze_rank_laben("./data", prefix, suffix)
+ans_leven2 = analyze_rank_laben2("./data", prefix, suffix)
+
+ans_df_rank_right = ans_df_rank + ans_df_right
+ans_df_rank_right_las = ans_df_rank_3 + ans_df_right_2
+```
+
+
+```{r}
+qa_df = create_kyoki_net("./data/demo2-1.csv")
+tes_qa_df1 = analyze_df(attendees, qa_df)
+
+qa_df2 = create_kyoki_net("./data/demo2-2-qa-joined.csv")
+tes_qa_df2 = analyze_df(attendees, qa_df2)
+
+demo2_1df = read.csv("./data/demo2-1.csv")
+demo2_2df = read.csv("./data/demo2-2.csv")
+demo2_df = rbind(demo2_1df, demo2_2df)
+demo2 = create_kyoki_net_from_df(demo2_df)
+tes_demo2 = analyze_df(attendees, demo2)
+
+demo2_1_qa_df = read.csv("./data/demo2-1.csv")
+demo2_2_qa_df = read.csv("./data/demo2-2-qa-joined.csv")
+demo2_qa_df = rbind(demo2_1_qa_df, demo2_2_qa_df)
+demo2_qa = create_kyoki_net_from_df(demo2_qa_df)
+tes_demo2_qa = analyze_df(attendees, demo2_qa)
+
+tes_demo2_qa
+
+calculate_cor(tes_qa_df1, tes_qa_df2, ans_df_right)
+calculate_cor(tes_df1, tes_demo2, ans_leven2)
+calculate_cor(tes_df1, tes_df2, ans_leven)
+```
+

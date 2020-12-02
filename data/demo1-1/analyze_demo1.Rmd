@@ -24,10 +24,9 @@ library(dplyr) # filter
 ```
 
 ```{r}
-answer_morphenes_list = scan("./data/answer_like_morphenes.txt", character(), quote = "")
+answer_morphenes_list = scan("./data/answer_like_morphenes.txt", character(), quote = "") 
 
-create_kyoki_net = function(csvPath) {
-  remarks_df = read.csv(csvPath)
+create_kyoki_net_from_df = function(remarks_df) {
   raw_mor = list()
   morphenes = list()
   for(r in remarks_df$remark) {
@@ -53,7 +52,8 @@ create_kyoki_net = function(csvPath) {
   }
 
   net <- graph_from_adjacency_matrix(as.matrix(adjacency_df) , mode="directed")
-  bt = betweenness(net)
+  plot(net, vertex.size = 3, vertex.label = NA, edge.arrow.size=.2, edge.width=.4, edge.curved=.1) #1
+  bt = betweenness(net, directed = TRUE)
   out_deg = degree(net, mode="out")
   in_deg = degree(net, mode="in")
 
@@ -63,10 +63,15 @@ create_kyoki_net = function(csvPath) {
   remarks_bt_deg_df$in_degree = in_deg
   return(remarks_bt_deg_df)
 }
+
+create_kyoki_net = function(csvPath) {
+  remarks_df = read.csv(csvPath)
+  return(create_kyoki_net_from_df(remarks_df))
+}
 ```
 
 ```{r}
-attendees = c("程", "小松", "徳永", "富田")
+attendees = c("程", "小松", "徳永", "富田") 
 analyze_df = function(attendees, df){
   result_df = data.frame(matrix(0, 0, 3))
   colnames(result_df) = c("betweenness", "outdegree", "indegree")
@@ -77,23 +82,11 @@ analyze_df = function(attendees, df){
     in_deg = mean(filter(target_df, in_degree>0)$in_degree)
     result_df[a,] = c(bet, out_deg, in_deg)
   }
+  result_df[is.na(result_df)] <- 0
   return(result_df)
 }
 ```
 
-```{r}
-df = create_kyoki_net("./data/demo1-1.csv")
-analyze_df(attendees, df)
-
-qa_df = create_kyoki_net("./data/demo1-1-qa-joined.csv")
-analyze_df(attendees, qa_df)
-
-df2 = create_kyoki_net("./data/demo1-2.csv")
-analyze_df(attendees, df2)
-
-qa_df2 = create_kyoki_net("./data/demo1-2-qa-joined.csv")
-analyze_df(attendees, qa_df2)
-```
 
 ```{r}
 attendees_prefixes = list("程"="tei", "小松"="kom", "徳永"="tok", "富田"="tom")
@@ -149,7 +142,7 @@ count_intersect = function(df){
 
 ```{r}
 tmp2res = function(tmp_df){
-  result_df = data.frame(matrix(ncol=2, nrow=4))
+  result_df = data.frame(matrix(ncol=2, nrow=nrow(tmp_df)))
   colnames(result_df) = c("first", "second")
   rownames(result_df) = rownames(tmp_df)
   for(r in 1:nrow(tmp_df)){
@@ -164,10 +157,11 @@ tmp2res = function(tmp_df){
 
 
 ```{r}
+# 模範解答との差を計上する
 analyze_rank = function(data_dir, attendees_prefixes, suffixes){
-  tmp_df = data.frame(matrix(ncol = 3, nrow = 4))
-  colnames(tmp_df) = suffix
-  rownames(tmp_df) = prefix
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
   for(a_pre in attendees_prefixes){
     for(suf in suffixes){
       file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
@@ -181,10 +175,11 @@ analyze_rank = function(data_dir, attendees_prefixes, suffixes){
 ```
 
 ```{r}
+# 模範解答との差が一位内のものを計上する
 analyze_rank2 = function(data_dir, attendees_prefixes, suffixes){
-  tmp_df = data.frame(matrix(ncol = 3, nrow = 4))
-  colnames(tmp_df) = suffix
-  rownames(tmp_df) = prefix
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
   for(a_pre in attendees_prefixes){
     for(suf in suffixes){
       file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
@@ -197,54 +192,19 @@ analyze_rank2 = function(data_dir, attendees_prefixes, suffixes){
 }
 ```
 
-
 ```{r}
-analyze_reason = function(data_dir, attendees_prefixes, suffixes){
-  tmp_df = data.frame(matrix(ncol = 3, nrow = 4))
-  colnames(tmp_df) = suffix
-  rownames(tmp_df) = prefix
+analyze_rank3 = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
   for(a_pre in attendees_prefixes){
     for(suf in suffixes){
       file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
       df = read.csv(file_path)
-      tmp_df[a_pre, suf] = count_intersect(df)
+      tmp_df[a_pre, suf] = sum_dif1_right(df)
     }
   }
-  return(tmp2res(tmp_df))
-}
-```
-
-
-```{r}
-analyze_right = function(data_dir, attendees_prefixes, suffixes){
-  tmp_df = data.frame(matrix(ncol = 3, nrow = 4))
-  colnames(tmp_df) = suffix
-  rownames(tmp_df) = prefix
-  for(a_pre in attendees_prefixes){
-    for(suf in suffixes){
-      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
-      df = read.csv(file_path)
-      tmp_df[a_pre, suf] = sum(df$right)
-    }
-  }
-  print(tmp_df)
-  return(tmp2res(tmp_df))
-}
-```
-
-```{r}
-analyze_right2 = function(data_dir, attendees_prefixes, suffixes){
-  tmp_df = data.frame(matrix(ncol = 3, nrow = 4))
-  colnames(tmp_df) = suffix
-  rownames(tmp_df) = prefix
-  for(a_pre in attendees_prefixes){
-    for(suf in suffixes){
-      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
-      df = read.csv(file_path)
-      tmp_df[a_pre, suf] = sum(df$right)
-    }
-  }
-  result_df = data.frame(matrix(ncol=2, nrow=4))
+  result_df = data.frame(matrix(ncol=2, nrow=nrow(tmp_df)))
   colnames(result_df) = c("first", "second")
   rownames(result_df) = rownames(tmp_df)
   for(r in 1:nrow(tmp_df)){
@@ -259,12 +219,225 @@ analyze_right2 = function(data_dir, attendees_prefixes, suffixes){
 
 
 ```{r}
+analyze_reason = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      tmp_df[a_pre, suf] = count_intersect(df)
+    }
+  }
+  return(tmp2res(tmp_df))
+}
+```
+
+
+```{r}
+# 正答と判断されたものrを計上し、各グループワーク間の変化量を算出
+analyze_right = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      tmp_df[a_pre, suf] = sum(df$right)
+    }
+  }
+  print(tmp_df)
+  return(tmp2res(tmp_df))
+}
+```
+
+```{r}
+# 正答と判断されたものを計上し、グループワワークの終わりの値を算出
+analyze_right2 = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      tmp_df[a_pre, suf] = sum(df$right)
+    }
+  }
+  result_df = data.frame(matrix(ncol=2, nrow=nrow(tmp_df)))
+  colnames(result_df) = c("first", "second")
+  rownames(result_df) = rownames(tmp_df)
+  for(r in 1:nrow(tmp_df)){
+    target = tmp_df[r,]
+    f = target$mid
+    s = target$pos
+    result_df[r,] = c(f, s)
+  }
+  return(result_df)
+}
+```
+
+```{r}
+calc_leven = function(word1_str, word2_str) {
+  df <- data.frame(matrix(0, length(word1_str)+1, length(word2_str)+1))
+  for(i in 2:nrow(df)){
+    for(j in 2:ncol(df)){
+      val1 <- df[i, j-1] + 1   # 削除(コスト1)
+      val2 <- df[i-1, j] + 1   # 挿入(コスト1)
+      
+      if(word1_str[i-1] == word2_str[j-1]){   # 左と上の文字が一緒なら
+        val3 <- df[i-1, j-1]       # 変化なし
+      }else{                      # 左と上の文字が異なるなら
+        val3 <- df[i-1, j-1] + 1   # 置換(コスト1)
+      }
+      df[i, j] <- min(val1, val2, val3)
+    }
+  }
+  return(-1 * df[length(word1_str)+1, length(word2_str)+1])
+}
+```
+
+
+```{r}
+analyze_rank_laben = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      arr1 = c()
+      arr2 = c()
+      for(i in 1:nrow(df)){
+        r = df[i,]
+        item_name = toString(r$item)
+        ans_r = filter(ans_df, item==item_name)
+        arr1 = c(arr1, paste(r$rank))
+        arr2 = c(arr2, paste(ans_r$rank))
+      }
+      tmp_df[a_pre, suf] = calc_leven(arr1, arr2)
+    }
+  }
+  print(tmp_df)
+  return(tmp2res(tmp_df))
+}
+```
+
+
+```{r}
+analyze_rank_laben2 = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      arr1 = c()
+      arr2 = c()
+      for(i in 1:nrow(df)){
+        r = df[i,]
+        item_name = toString(r$item)
+        ans_r = filter(ans_df, item==item_name)
+        arr1 = c(arr1, paste(r$rank))
+        arr2 = c(arr2, paste(ans_r$rank))
+      }
+      tmp_df[a_pre, suf] = calc_leven(arr1, arr2)
+    }
+  }
+  result_df = data.frame(matrix(ncol=2, nrow=nrow(tmp_df)))
+  colnames(result_df) = c("first", "second")
+  rownames(result_df) = rownames(tmp_df)
+  for(r in 1:nrow(tmp_df)){
+    target = tmp_df[r,]
+    f = target$mid
+    s = target$pos
+    result_df[r,] = c(f, s)
+  }
+  return(result_df)
+}
+```
+
+
+```{r}
+df = create_kyoki_net("./data/demo1-1.csv")
+tes_df = analyze_df(attendees, df)
+
+qa_df = create_kyoki_net("./data/demo1-1-qa-joined.csv")
+tes_qa_df = analyze_df(attendees, qa_df)
+
+df2 = create_kyoki_net("./data/demo1-2.csv")
+tes_df2 = analyze_df(attendees, df2)
+
+qa_df2 = create_kyoki_net("./data/demo1-2-qa-joined.csv")
+tes_qa_df2 = analyze_df(attendees, qa_df2)
+
+```
+
+```{r}
 prefix = c("tei", "kom", "tok", "tom")
 suffix = c("pre", "mid", "pos")
 analyze_rank("./data", prefix, suffix)
-analyze_rank2("./data", prefix, suffix)
+ans_df_rank = analyze_rank2("./data", prefix, suffix)
+ans_df_rank_3 = analyze_rank3("./data", prefix, suffix)
 analyze_reason("./data", prefix, suffix)
-analyze_right("./data", prefix, suffix)
-analyze_right2("./data", prefix, suffix)
+ans_df_right = analyze_right("./data", prefix, suffix)
+ans_df_right_2 = analyze_right2("./data", prefix, suffix)
+
+ans_leven = analyze_rank_laben("./data", prefix, suffix)
+ans_leven2 = analyze_rank_laben2("./data", prefix, suffix)
+
+
+ans_df_rank_right = ans_df_rank + ans_df_right
+ans_df_rank_right_las = ans_df_rank_3 + ans_df_right_2
+```
+
+```{r}
+calculate_cor= function(tes_df, tes_df2, ans_df){
+  tes_b = c(tes_df$betweenness, tes_df2$betweenness)
+  tes_o = c(tes_df$outdegree, tes_df2$outdegree)
+  tes_i = c(tes_df$indegree, tes_df2$indegree)
+  ans = c(ans_df$first, ans_df$second)
+  df = data.frame(c(cor(tes_b, ans), cor(tes_o, ans), cor(tes_i, ans)))
+  rownames(df) = c("bet", "out", "in")
+  return(df)
+}
+```
+
+
+```{r}
+demo1_1_df = read.csv("./data/demo1-1.csv")
+demo1_2_df = read.csv("./data/demo1-2.csv")
+demo1_df = rbind(demo1_1_df, demo1_2_df)
+demo1 = create_kyoki_net_from_df(demo1_df)
+tes_demo1 = analyze_df(attendees, demo1)
+calculate_cor(tes_df, tes_demo1, ans_df_right_2)
+
+calculate_cor(tes_df, tes_demo1, ans_leven2)
+calculate_cor(tes_df, tes_df2, ans_leven)
+
+
+demo1_1_qa_df = read.csv("./data/demo1-1-qa-joined.csv")
+demo1_2_qa_df = read.csv("./data/demo1-2-qa-joined.csv")
+demo1_qa_df = rbind(demo1_1_qa_df, demo1_2_qa_df)
+demo1_qa = create_kyoki_net_from_df(demo1_qa_df)
+tes_demo1_qa = analyze_df(attendees, demo1_qa)
+
+calculate_cor(tes_qa_df, tes_demo1_qa, ans_df_right_2)
+```
+
+```{r}
+conv = function(df1, df2){
+  res_df = data.frame(matrix(ncol = nrow(df1)*2, nrow = ncol(df1)))
+  for(i in 1:nrow(df1)){
+    res_df[,i*2-1] = unlist(df1[i,])
+    res_df[,i*2] = unlist(df2[i,])
+  }
+  return(res_df)
+}
+conv(tes_df, tes_df2)
 ```
 

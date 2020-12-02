@@ -1,17 +1,7 @@
 ```{r}
-#source("http://rmecab.jp/R/Aozora.R")
-#uchuu <- Aozora(url = "https://www.aozora.gr.jp/cards/000226/files/1150_ruby_38564.zip") 
 library(RMeCab)
 library(dplyr)
 library(purrr)
-
-#tf <- tempfile()
-#RMeCabText(uchuu) %>% map(function(x)
-#  ifelse( (x[[2]] %in% c("名詞", "形容詞", "動詞"))  && 
-#            (!x[[3]] %in% c("数", "非自立", "代名詞","接尾") ) && (x[[8]] != "*"), 
-#          x[[8]],  ""))  %>%  paste(" ", collapse = "") %>%
-#  write(file = tf, append = TRUE)
-#file.show(tf)
 
 devtools::install_github("bmschmidt/wordVectors")
 library(wordVectors)
@@ -24,15 +14,15 @@ wiki_model = read.binary.vectors("../db/entity_vector/entity_vector.model.bin")
 ```
 
 ```{r}
-words = wiki_model %>% nearest_to("寒暖", n=200) %>% round(3)
-ws = names(words[words < 0.5])
+words = wiki_model %>% nearest_to("寒暖", n=200) %>% round(3) ## must have 6GB memory
+ws = names(words[words < 0.7])
 unique(unlist(lapply(ws, function(x){gsub("\\[|\\]", "", x)})))
 ```
 
 ```{r}
 similars = function(word){
   words = wiki_model %>% nearest_to(word, n=200)
-  similar_words = names(words[words < 0.5])
+  similar_words = names(words[words < 0.25])
   return(unique(unlist(lapply(similar_words, function(x){gsub("\\[|\\]", "", x)}))))
 }
 ```
@@ -63,8 +53,11 @@ answer_like_morphenes_list=unique(answer_like_morphenes_list[!answer_like_morphe
 
 
 ```
+
 ```{r}
-static_answer = c("酸素", "エネルギー", "補給", "崖", "高さ", "測る", "けが人", "運ぶ", "太陽光", "遮断", "寒暖", "発射", "反動", "前進", "宇宙食", "かさばる", "生存", "必要", "現在地", "確かめる", "炭酸", "ガスボンベ", "推進力", "月面", "磁気", "母船", "救難信号", "宇宙服", "特殊孔", "ビタミン剤", "薬", "FM", "近距離")
+# static_answer = c("酸素", "エネルギー", "補給", "崖", "高さ", "測る", "けが人", "運ぶ", "太陽光", "遮断", "寒暖", "発射", "反動", "前進", "宇宙食", "かさばる", "生存", "必要", "現在地", "確かめる", "炭酸", "ガスボンベ", "推進力", "月面", "磁気", "母船", "救難信号", "宇宙服", "特殊孔", "ビタミン剤", "薬", "FM", "近距離")
+
+static_answer = c("夜", "救助", "光", "知らせる", "塩", "血液", "濃度", "脱水", "促進", "周辺", "地形", "捜索隊", "発見", "生存", "不可欠", "砂嵐", "守る", "動物", "捕まえる", "体力", "消耗", "町", "向かう", "太陽", "肌", "浴びる", "夜", "寒さ", "拳銃", "音", "動物", "射殺", "鏡", "遠距離", "届く", "信号", "広げる", "空", "目印", "喉", "乾く")
 
 static_answer_map = list()
 
@@ -74,7 +67,7 @@ for (i in 1:length(static_answer)){
   answer_like_morphenes_list = c(answer_like_morphenes_list, similars(static_answer[i])) 
 }
 
-# lapply(answer_like_morphenes_list, write, "./data/answer_like_morphenes.txt", append=TRUE)
+lapply(answer_like_morphenes_list, write, "./data/answer_like_morphenes2.txt", append=T)
 ```
 
 ```{r}
