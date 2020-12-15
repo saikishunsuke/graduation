@@ -1,0 +1,34 @@
+```{r}
+answer_morphenes_list = scan("./answer_like_morphenes.txt", character(), quote = "")
+attendees = c("阿部", "石見", "佐久間")
+attendees_prefixes = list("阿部"="abe", "石見"="iwa", "佐久間"="sak")
+postfixes = c("pre", "mid", "pos")
+ans_df = read.csv("./answers/answer.csv")
+```
+
+```{r}
+df = analyze_df(attendees, create_kyoki_net("./remarks/exp1-1.csv"))
+df2 = analyze_df(attendees, create_kyoki_net("./remarks/exp1-2.csv"))
+exp1 = analyze_df(attendees, create_kyoki_net_from_df(merge_df_from_path("./remarks/exp1-1.csv", "./remarks/exp1-2.csv")))
+
+qa_df = analyze_df(attendees, create_kyoki_net("./remarks/exp1-1-qa-joined.csv"))
+qa_df_2 = analyze_df(attendees, create_kyoki_net("./remarks/exp1-2-qa-joined.csv"))
+qa_exp1 = analyze_df(attendees, create_kyoki_net_from_df(merge_df_from_path("./remarks/exp1-1-qa-joined.csv", "./remarks/exp1-2-qa-joined.csv")))
+```
+
+```{r}
+prefix = c("abe", "iwa", "sak")
+suffix = c("pre", "mid", "pos")
+damerau_right = analyze_damerau_right_exp("./answers", prefix, suffix)
+damerau_right_las = analyze_damerau_right_las_exp("./answers", prefix, suffix)
+
+conv(df, df2)
+conv(qa_df, qa_df_2)
+conv_ans(damerau_right)
+calculate_cor(df, df2, damerau_right)
+calculate_cor(df, exp1, damerau_right_las)
+calculate_cor(qa_df, qa_df_2, damerau_right)
+calculate_cor(qa_df, qa_exp1, damerau_right_las)
+df
+```
+

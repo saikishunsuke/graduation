@@ -1,0 +1,572 @@
+
+```{r}
+library(RMeCab)
+library(igraph)
+library(stringr)
+library(dplyr) # filter
+```
+
+```{r}
+create_kyoki_net_from_df = function(remarks_df) {
+  raw_mor = list()
+  morphenes = list()
+  for(r in remarks_df$remark) {
+    mor = RMeCabC(r, 1)
+    morphenes = append(morphenes, list(mor[names(unlist(mor)) == "名詞" | names(unlist(mor)) == "動詞" | names(unlist(mor)) == "形容詞"])) 
+    raw_mor = append(raw_mor, list(mor))
+  }
+
+  adjacency_df <- data.frame(matrix(0, length(morphenes), length(morphenes)))
+  tmp = list()
+  for (i in 1:length(morphenes)) {
+    r1 <- unlist(morphenes[i]) 
+    im = list()
+    for (j in i+1:length(morphenes)) {
+      inte <- intersect(r1, unlist(morphenes[j]))
+      inte <- intersect(inte, answer_morphenes_list)
+      if (length(inte) > 0) {
+        adjacency_df[i, j] = length(inte)
+        im = append(im, inte)
+      }
+    }
+    tmp = append(tmp, list(im))
+  }
+
+  net <- graph_from_adjacency_matrix(as.matrix(adjacency_df) , mode="directed")
+  plot(net, vertex.size = 3, vertex.label = NA, edge.arrow.size=.2, edge.width=.4, edge.curved=.1) #1
+  bt = betweenness(net, directed = TRUE)
+  out_deg = degree(net, mode="out")
+  in_deg = degree(net, mode="in")
+
+  remarks_bt_deg_df = remarks_df
+  remarks_bt_deg_df$betweenness = bt
+  remarks_bt_deg_df$out_degree = out_deg
+  remarks_bt_deg_df$in_degree = in_deg
+  return(remarks_bt_deg_df)
+}
+
+create_kyoki_net = function(csvPath) {
+  remarks_df = read.csv(csvPath)
+  return(create_kyoki_net_from_df(remarks_df))
+}
+```
+
+
+```{r}
+analyze_df = function(attendees, df){
+  result_df = data.frame(matrix(0, 0, 3))
+  colnames(result_df) = c("betweenness", "outdegree", "indegree")
+  for(a in attendees){
+    target_df = filter(df, str_detect(attendee, pattern = a))
+    bet = mean(filter(target_df, betweenness>0)$betweenness)
+    out_deg = mean(filter(target_df, out_degree>0)$out_degree)
+    in_deg = mean(filter(target_df, in_degree>0)$in_degree)
+    result_df[a,] = c(bet, out_deg, in_deg)
+  }
+  result_df[is.na(result_df)] <- 0
+  return(result_df)
+}
+```
+
+
+```{r}
+sum_err = function(df){ 
+  err = 0
+  for(i in 1:nrow(df)){
+    r = df[i,]
+    item_name = toString(r$item)
+    ans_r = filter(ans_df, item==item_name)
+    err = err + abs(r$rank - ans_r$rank)
+  }
+  return(err)
+}
+```
+
+```{r}
+sum_dif1_right = function(df){
+  res = 0
+  for(i in 1:nrow(df)){
+    r = df[i,]
+    item_name = toString(r$item)
+    ans_r = filter(ans_df, item==item_name)
+    a = abs(r$rank - ans_r$rank)
+    if(a <= 1){res = res + 1}
+  }
+  return(res)
+}
+```
+
+
+```{r}
+count_intersect = function(df){
+  counts = 0
+  mor_count = 0
+  for(i in 1:nrow(df)){
+    r = df[i,]
+    item_name = toString(r$item)
+    mor = RMeCabC(r$reason)
+    morphenes = list(mor[names(unlist(mor)) == "名詞" | names(unlist(mor)) == "動詞" | names(unlist(mor)) == "形容詞"])
+    counts = counts + length(intersect(unlist(morphenes), answer_morphenes_list))
+    mor_count = mor_count + length(mor)
+  }
+  print(mor_count)
+  return(counts)
+}
+```
+
+
+```{r}
+tmp2res = function(tmp_df){
+  result_df = data.frame(matrix(ncol=2, nrow=nrow(tmp_df)))
+  colnames(result_df) = c("first", "second")
+  rownames(result_df) = rownames(tmp_df)
+  for(r in 1:nrow(tmp_df)){
+    target = tmp_df[r,]
+    f = target$mid - target$pre
+    s = target$pos - target$mid
+    result_df[r,] = c(f, s)
+  }
+  return(result_df)
+}
+```
+
+
+```{r}
+tmp2las = function(tmp_df){
+  result_df = data.frame(matrix(ncol=2, nrow=nrow(tmp_df)))
+  colnames(result_df) = c("first", "second")
+  rownames(result_df) = rownames(tmp_df)
+  for(r in 1:nrow(tmp_df)){
+    target = tmp_df[r,]
+    f = target$mid
+    s = target$pos
+    result_df[r,] = c(f, s)
+  }
+  return(result_df)
+}
+```
+
+
+
+```{r}
+# 模範解答との差を計上する
+analyze_rank = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      tmp_df[a_pre, suf] = sum_err(df)
+    }
+  }
+
+  return(tmp2res(tmp_df))
+}
+```
+
+```{r}
+# 模範解答との差が一位内のものを計上する
+analyze_rank2 = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      tmp_df[a_pre, suf] = sum_dif1_right(df)
+    }
+  }
+  print(tmp_df)
+  return(tmp2res(tmp_df))
+}
+```
+
+```{r}
+analyze_rank3 = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      tmp_df[a_pre, suf] = sum_dif1_right(df)
+    }
+  }
+  result_df = data.frame(matrix(ncol=2, nrow=nrow(tmp_df)))
+  colnames(result_df) = c("first", "second")
+  rownames(result_df) = rownames(tmp_df)
+  for(r in 1:nrow(tmp_df)){
+    target = tmp_df[r,]
+    f = target$mid
+    s = target$pos
+    result_df[r,] = c(f, s)
+  }
+  return(result_df)
+}
+```
+
+
+```{r}
+analyze_reason = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      tmp_df[a_pre, suf] = count_intersect(df)
+    }
+  }
+  return(tmp2res(tmp_df))
+}
+```
+
+
+```{r}
+# 正答と判断されたものrを計上し、各グループワーク間の変化量を算出
+analyze_right = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      tmp_df[a_pre, suf] = sum(df$right)
+    }
+  }
+  print(tmp_df)
+  return(tmp2res(tmp_df))
+}
+```
+
+```{r}
+# 正答と判断されたものを計上し、グループワワークの終わりの値を算出
+analyze_right2 = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      tmp_df[a_pre, suf] = sum(df$right)
+    }
+  }
+  result_df = data.frame(matrix(ncol=2, nrow=nrow(tmp_df)))
+  colnames(result_df) = c("first", "second")
+  rownames(result_df) = rownames(tmp_df)
+  for(r in 1:nrow(tmp_df)){
+    target = tmp_df[r,]
+    f = target$mid
+    s = target$pos
+    result_df[r,] = c(f, s)
+  }
+  return(result_df)
+}
+```
+
+```{r}
+calc_leven = function(word1_str, word2_str) {
+  df <- data.frame(matrix(0, length(word1_str)+1, length(word2_str)+1))
+  for(i in 2:nrow(df)){
+    for(j in 2:ncol(df)){
+      val1 <- df[i, j-1] + 1   # 削除(コスト1)
+      val2 <- df[i-1, j] + 1   # 挿入(コスト1)
+      
+      if(word1_str[i-1] == word2_str[j-1]){   # 左と上の文字が一緒なら
+        val3 <- df[i-1, j-1]       # 変化なし
+      }else{                      # 左と上の文字が異なるなら
+        val3 <- df[i-1, j-1] + 1   # 置換(コスト1)
+      }
+      df[i, j] <- min(val1, val2, val3)
+    }
+  }
+  return(-1 * df[length(word1_str)+1, length(word2_str)+1])
+}
+```
+
+
+```{r}
+analyze_rank_laben = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      arr1 = c()
+      arr2 = c()
+      for(i in 1:nrow(df)){
+        r = df[i,]
+        item_name = toString(r$item)
+        ans_r = filter(ans_df, item==item_name)
+        arr1 = c(arr1, paste(r$rank))
+        arr2 = c(arr2, paste(ans_r$rank))
+      }
+      tmp_df[a_pre, suf] = calc_leven(arr1, arr2)
+    }
+  }
+  return(tmp2res(tmp_df))
+}
+```
+
+```{r}
+calc_damerau = function(rank_arr){  #rank_arrを1~nにする上で行った入れ替え操作の回数を計上
+  swap_counter = 0
+  i = 1
+  while(i < length(rank_arr)){
+    if(rank_arr[i] > rank_arr[i + 1]) {
+      rank_arr[i:(i+1)] <- c(rank_arr[i+1], rank_arr[i])
+      i <- 1
+      swap_counter = swap_counter + 1
+    }else{
+      i <- i + 1
+    }
+  }
+  return(swap_counter)
+}
+
+analyze_damerau_demo = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  sorted_ans_df = ans_df[order(ans_df$rank),]
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      arr = c()
+      for(i in 1:nrow(df)){
+        ans_r = sorted_ans_df[i,]
+        item_name = toString(ans_r$item)
+        r = filter(df, item==item_name)
+        arr = c(arr, r$rank)
+      }
+      tmp_df[a_pre, suf] = (calc_damerau(arr) * -1) / calc_damerau(c(length(arr):1))  # div maxim
+    }
+  }
+  return(tmp2res(tmp_df))
+}
+```
+
+```{r}
+analyze_damerau_right_demo = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  sorted_ans_df = ans_df[order(ans_df$rank),]
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      arr = c()
+      for(i in 1:nrow(df)){
+        ans_r = sorted_ans_df[i,]
+        item_name = toString(ans_r$item)
+        r = filter(df, item==item_name)
+        arr = c(arr, r$rank)
+      }
+      max_damerau = calc_damerau(c(length(arr):1))
+      tmp_df[a_pre, suf] = (((calc_damerau(arr) * -1) + max_damerau)/max_damerau) + (sum(df$right) / length(arr))
+    }
+  }
+  return(tmp2res(tmp_df))
+}
+
+analyze_damerau_right_las_demo = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  sorted_ans_df = ans_df[order(ans_df$rank),]
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      arr = c()
+      for(i in 1:nrow(df)){
+        ans_r = sorted_ans_df[i,]
+        item_name = toString(ans_r$item)
+        r = filter(df, item==item_name)
+        arr = c(arr, r$rank)
+      }
+      max_damerau = calc_damerau(c(length(arr):1))
+      tmp_df[a_pre, suf] = (((calc_damerau(arr) * -1) + max_damerau)/max_damerau) + (sum(df$right) / length(arr))
+    }
+  }
+  print(tmp_df)
+  return(tmp2las(tmp_df))
+}
+```
+
+
+```{r}
+analyze_damerau_right_exp = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  sorted_ans_df = ans_df[order(ans_df$rank1),]
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      arr = c()
+      for(i in 1:nrow(df)){
+        ans_r = sorted_ans_df[i,]
+        item_name = toString(ans_r$item)
+        r = filter(df, item==item_name)
+        arr = c(arr, r$rank)
+      }
+      max_damerau = calc_damerau(c(length(arr):1))
+      tmp_df[a_pre, suf] = (((calc_damerau(arr) * -1) + max_damerau)/max_damerau) + (sum(df$right) / length(arr))
+    }
+  }
+  sorted_ans_df = ans_df[order(ans_df$rank2),]
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      arr = c()
+      for(i in 1:nrow(df)){
+        ans_r = sorted_ans_df[i,]
+        item_name = toString(ans_r$item)
+        r = filter(df, item==item_name)
+        arr = c(arr, r$rank)
+      }
+      max_damerau = calc_damerau(c(length(arr):1))
+      tmp_df[a_pre, suf] = (tmp_df[a_pre, suf] + (((calc_damerau(arr) * -1) + max_damerau)/max_damerau) + (sum(df$right) / length(arr))) / 4
+    }
+  }
+  print(tmp_df)
+  return(tmp2res(tmp_df))
+}
+
+analyze_damerau_right_las_exp = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  sorted_ans_df = ans_df[order(ans_df$rank1),]
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      arr = c()
+      for(i in 1:nrow(df)){
+        ans_r = sorted_ans_df[i,]
+        item_name = toString(ans_r$item)
+        r = filter(df, item==item_name)
+        arr = c(arr, r$rank)
+      }
+      max_damerau = calc_damerau(c(length(arr):1))
+      tmp_df[a_pre, suf] = (((calc_damerau(arr) * -1) + max_damerau)/max_damerau) + (sum(df$right) / length(arr))
+    }
+  }
+  sorted_ans_df = ans_df[order(ans_df$rank2),]
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      arr = c()
+      for(i in 1:nrow(df)){
+        ans_r = sorted_ans_df[i,]
+        item_name = toString(ans_r$item)
+        r = filter(df, item==item_name)
+        arr = c(arr, r$rank)
+      }
+      max_damerau = calc_damerau(c(length(arr):1))
+      tmp_df[a_pre, suf] = (tmp_df[a_pre, suf] + (((calc_damerau(arr) * -1) + max_damerau)/max_damerau) + (sum(df$right) / length(arr))) / 4
+    }
+  }
+  print(tmp_df)
+  return(tmp2las(tmp_df))
+}
+```
+
+
+
+```{r}
+analyze_rank_laben2 = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      arr1 = c()
+      arr2 = c()
+      for(i in 1:nrow(df)){
+        r = df[i,]
+        item_name = toString(r$item)
+        ans_r = filter(ans_df, item==item_name)
+        arr1 = c(arr1, paste(r$rank))
+        arr2 = c(arr2, paste(ans_r$rank))
+      }
+      tmp_df[a_pre, suf] = calc_leven(arr1, arr2)
+    }
+  }
+  result_df = data.frame(matrix(ncol=2, nrow=nrow(tmp_df)))
+  colnames(result_df) = c("first", "second")
+  rownames(result_df) = rownames(tmp_df)
+  for(r in 1:nrow(tmp_df)){
+    target = tmp_df[r,]
+    f = target$mid
+    s = target$pos
+    result_df[r,] = c(f, s)
+  }
+  return(result_df)
+}
+```
+
+
+```{r}
+calculate_cor= function(tes_df, tes_df2, ans_df){
+  tes_b = c(tes_df$betweenness, tes_df2$betweenness)
+  tes_o = c(tes_df$outdegree, tes_df2$outdegree)
+  tes_i = c(tes_df$indegree, tes_df2$indegree)
+  ans = c(ans_df$first, ans_df$second)
+  df = data.frame(c(cor(tes_b, ans), cor(tes_o, ans), cor(tes_i, ans)))
+  rownames(df) = c("bet", "out", "in")
+  return(df)
+}
+```
+
+```{r}
+merge_df_from_path = function(path1, path2){
+  df1 = read.csv(path1)
+  df2 = read.csv(path2)
+  print(df1)
+  print(df2)
+  return(rbind(df1, df2))
+}
+```
+
+
+```{r}
+conv = function(df1, df2){
+  res_df = data.frame(matrix(ncol = nrow(df1)*2, nrow = ncol(df1)))
+  for(i in 1:nrow(df1)){
+    res_df[,i*2-1] = unlist(df1[i,])
+    res_df[,i*2] = unlist(df2[i,])
+  }
+  return(res_df)
+}
+```
+
+```{r}
+conv_ans = function(ans_df){
+  res_df = data.frame(matrix(ncol = nrow(ans_df)*2, nrow = 1))
+  for(i in 1:nrow(ans_df)){
+    res_df[,i*2-1] = ans_df[i,]$first
+    res_df[,i*2] = ans_df[i,]$second
+  }
+  return(res_df)
+}
+```
+
