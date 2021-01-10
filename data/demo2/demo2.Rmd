@@ -56,5 +56,13 @@ tes_demo2_qa
 calculate_cor(tes_qa_df1, tes_qa_df2, ans_df_right)
 calculate_cor(tes_df1, tes_demo2, ans_leven2)
 calculate_cor(tes_df1, tes_df2, ans_leven)
+
+damerau_right = analyze_damerau_right_demo("./data", prefix, suffix)
+calculate_cor(tes_df1, tes_df2, damerau_right)
+calculate_cor(tes_qa_df1, tes_qa_df2, damerau_right)
+
+damerau_right_las = analyze_damerau_right_las_demo("./data", prefix, suffix)
+calculate_cor(tes_df1, tes_demo2, damerau_right_las)
+calculate_cor(tes_qa_df1, tes_demo2_qa, damerau_right_las)
 ```
 

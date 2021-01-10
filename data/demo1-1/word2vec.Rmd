@@ -14,52 +14,53 @@ wiki_model = read.binary.vectors("../db/entity_vector/entity_vector.model.bin")
 ```
 
 ```{r}
-words = wiki_model %>% nearest_to("寒暖", n=200) %>% round(3) ## must have 6GB memory
-ws = names(words[words < 0.7])
-unique(unlist(lapply(ws, function(x){gsub("\\[|\\]", "", x)})))
+# words = wiki_model %>% nearest_to("寒暖", n=200) %>% round(3) ## must have 6GB memory
+# ws = names(words[words < 0.7])
+# unique(unlist(lapply(ws, function(x){gsub("\\[|\\]", "", x)})))
 ```
 
 ```{r}
 similars = function(word){
   words = wiki_model %>% nearest_to(word, n=200)
+  print(words)
   similar_words = names(words[words < 0.25])
   return(unique(unlist(lapply(similar_words, function(x){gsub("\\[|\\]", "", x)}))))
 }
 ```
 
 ```{r}
-similars("運ぶ")
+# similars("運ぶ")
 ```
 
 ```{r}
-answer_reason_list = read.csv("./data/answer_demo1.csv")$reason
-answer_morphenes_list = c()
-
-for(r in answer_reason_list){
-  mor = RMeCabC(r, 1)
-  answer_morphenes_list = c(answer_morphenes_list, mor[names(unlist(mor)) == "名詞" | names(unlist(mor)) == "動詞" | names(unlist(mor)) == "形容詞"])
-}
-answer_morphenes_list = unlist(unique(answer_morphenes_list[!answer_morphenes_list %in% c("する", "こと", "ある")]))
-
-# -------------Mine is Here------------
-#answer_like_morphenes_list= c()
-#for (i in 1:length(answer_morphenes_list)){
-#  print(paste(i, "/", length(answer_morphenes_list)))
-#  answer_like_morphenes_list = c(answer_like_morphenes_list, similars(answer_morphenes_list[i])) 
-#}
-# -------------------------------------
-
-answer_like_morphenes_list=unique(answer_like_morphenes_list[!answer_like_morphenes_list %in% c("する", "こと", "ある", "の", "なる")])
-
-
+# answer_reason_list = read.csv("./data/answer_demo1.csv")$reason
+# answer_morphenes_list = c()
+# 
+# for(r in answer_reason_list){
+#   mor = RMeCabC(r, 1)
+#   answer_morphenes_list = c(answer_morphenes_list, mor[names(unlist(mor)) == "名詞" | names(unlist(mor)) == "動詞" | names(unlist(mor)) == "形容詞"])
+# }
+# answer_morphenes_list = unlist(unique(answer_morphenes_list[!answer_morphenes_list %in% c("する", "こと", "ある")]))
+# 
+# # -------------Mine is Here------------
+# #answer_like_morphenes_list= c()
+# #for (i in 1:length(answer_morphenes_list)){
+# #  print(paste(i, "/", length(answer_morphenes_list)))
+# #  answer_like_morphenes_list = c(answer_like_morphenes_list, similars(answer_morphenes_list[i])) 
+# #}
+# # -------------------------------------
+# 
+# answer_like_morphenes_list=unique(answer_like_morphenes_list[!answer_like_morphenes_list %in% c("する", "こと", "ある", "の", "なる")])
 ```
 
 ```{r}
 # static_answer = c("酸素", "エネルギー", "補給", "崖", "高さ", "測る", "けが人", "運ぶ", "太陽光", "遮断", "寒暖", "発射", "反動", "前進", "宇宙食", "かさばる", "生存", "必要", "現在地", "確かめる", "炭酸", "ガスボンベ", "推進力", "月面", "磁気", "母船", "救難信号", "宇宙服", "特殊孔", "ビタミン剤", "薬", "FM", "近距離")
 
-# static_answer = c("夜", "救助", "光", "知らせる", "塩", "血液", "濃度", "脱水", "促進", "周辺", "地形", "捜索隊", "発見", "生存", "不可欠", "砂嵐", "守る", "動物", "捕まえる", "体力", "消耗", "町", "向かう", "太陽", "肌", "浴びる", "夜", "寒さ", "拳銃", "音", "動物", "射殺", "鏡", "遠距離", "届く", "信号", "広げる", "空", "目印", "喉", "乾く")
+static_answer = c("夜", "救助", "光", "知らせる", "塩", "血液", "濃度", "脱水", "促進", "周辺", "地形", "捜索隊", "発見", "生存", "不可欠", "砂嵐", "守る", "動物", "捕まえる", "体力", "消耗", "町", "向かう", "太陽", "肌", "浴びる", "夜", "寒さ", "拳銃", "音", "動物", "射殺", "鏡", "遠距離", "届く", "信号", "広げる", "空", "目印", "喉", "乾く")
 
-static_answer = c("月", "生き残る", "重い", "運ぶ", "鋭い", "レゴリス", "パンク", "ソリ", "酸素", "水", "大気", "息", "熱", "反射", "体温", "太陽光", "高音", "守る", "気温", "夜", "明るい", "地球", "光", "暗い", "移動", "極点", "連絡", "日光", "液体", "宇宙", "外傷", "治療", "治す", "持ち運び", "食料", "軽い", "磁場", "使えない", "基地", "探す", "捜す", "無線", "疎通", "通信", "維持する", "位置", "ルート", "方向", "地図", "崖", "クレーター", "登る", "重傷", "防ぐ", "結ぶ", "ボート", "引っ張る", "地形", "使い道", "遮る", "破れ", "有害", "守る", "土", "穴", "危険", "マッチ", "修繕", "パラシュート", "ナイロン", "ロープ", "地図", "送受信", "方位磁石", "磁石", "応急処置", "シグナルミラー", "鏡", "ライト", "ブランケット", "救命", "ボート")
+# static_answer = c("月", "生き残る", "重い", "運ぶ", "鋭い", "レゴリス", "パンク", "ソリ", "酸素", "水", "大気", "息", "熱", "反射", "体温", "太陽光", "高音", "守る", "気温", "夜", "明るい", "地球", "光", "暗い", "移動", "極点", "連絡", "日光", "液体", "宇宙", "外傷", "治療", "治す", "持ち運び", "食料", "軽い", "磁場", "使えない", "基地", "探す", "捜す", "無線", "疎通", "通信", "維持する", "位置", "ルート", "方向", "地図", "崖", "クレーター", "登る", "重傷", "防ぐ", "結ぶ", "ボート", "引っ張る", "地形", "使い道", "遮る", "破れ", "有害", "守る", "土", "穴", "危険", "マッチ", "修繕", "パラシュート", "ナイロン", "ロープ", "地図", "送受信", "方位磁石", "磁石", "応急処置", "シグナルミラー", "鏡", "ライト", "ブランケット", "救命", "ボート")
+
+# static_answer = c("火打ち石", "打ち金", "調理", "火", "夜", "寒い", "暖", "料理", "動物", "尖る", "マスケット", "狩る", "新鮮", "肉", "防衛", "先住民", "友好的", "銃", "食料", "調達", "火薬", "弾丸", "天候", "塩", "豚肉", "乾パン", "貴重", "保存", "取引", "現地", "調達", "生", "燭台", "炎", "暗闇", "恐怖", "落ち着く", "明かり", "蝋燭", "自然", "剣", "武器", "研磨", "ナイフ", "斧", "木材", "切る", "薪", "砦", "壁", "シェルター", "高価", "流血", "皿", "医療", "ケア", "看病", "病気", "苦しい", "薬", "薬草", "治療", "血", "集める", "疾患", "ビーズ", "経済", "精神", "交換", "お金", "催事", "硬貨", "イギリス", "買う", "宝石", "価値", "アストロラーべ", "海", "水域", "航行", "川", "占星術", "方位磁石", "交易", "旅", "迷う", "マッピング", "陶器", "瓶", "液体", "保存", "希少", "綺麗", "湧水", "運ぶ", "壊れる", "毛皮", "割れる", "ガラス", "薬品", "酒", "ワイン", "破片", "道具", "ハンモック", "眠る")
 
 static_answer_map = list()
 
@@ -69,7 +70,8 @@ for (i in 1:length(static_answer)){
   answer_like_morphenes_list = c(answer_like_morphenes_list, similars(static_answer[i])) 
 }
 
-lapply(answer_like_morphenes_list, write, "../exp1/answer_like_morphenes.txt", append=T)
+
+# lapply(answer_like_morphenes_list, write, "../demo2/data/answer_like_morphenes.txt", append=T)
 ```
 
 ```{r}

@@ -1,0 +1,28 @@
+```{r}
+library(RMeCab)
+
+positive_words = c("なるほど", "たしかに", "確かに", "うん", "そう", "そうね", "いい", "良い")
+negative_words = c("でも", "だって", "いや")
+
+# remarks_df = read.csv("./remarks/exp1-1.csv")
+remarks_df = read.csv("./remarks/exp1-2.csv")
+positive_counts = list("阿部"=0, "石見"=0, "佐久間"=0)
+negative_counts = list("阿部"=0, "石見"=0, "佐久間"=0)
+for(i in 1:nrow(remarks_df)){
+  row = remarks_df[i,]
+  att = row$attendee
+  morphenes = RMeCabC(row$remark, 1)
+  pos_inte = intersect(unlist(morphenes), positive_words)
+  neg_inte = intersect(unlist(morphenes), negative_words)
+  if(length(neg_inte) > 0){
+    print(row)
+  }
+  positive_counts[att] = unlist(positive_counts[att]) + length(pos_inte)
+  negative_counts[att] = unlist(negative_counts[att]) + length(neg_inte)
+}
+
+positive_counts
+negative_counts
+
+```
+

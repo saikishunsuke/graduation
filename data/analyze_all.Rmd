@@ -1,0 +1,245 @@
+```{r}
+answer_morphenes_list = scan("./demo1-1/data/answer_like_morphenes.txt", character(), quote = "")
+attendees = c("程", "小松", "徳永", "富田")
+attendees_prefixes = list("程"="tei", "小松"="kom", "徳永"="tok", "富田"="tom")
+postfixes = c("pre", "mid", "pos")
+ans_df = read.csv("./demo1-1/data/answer_demo1.csv")
+
+df = create_kyoki_net("./demo1-1/data/demo1-1.csv")
+tes_df = analyze_df(attendees, df)
+df2 = create_kyoki_net("./demo1-1/data/demo1-2.csv")
+tes_df2 = analyze_df(attendees, df2)
+
+demo1_1_df = read.csv("./demo1-1/data/demo1-1.csv")
+demo1_2_df = read.csv("./demo1-1/data/demo1-2.csv")
+demo1_df = rbind(demo1_1_df, demo1_2_df)
+demo1 = create_kyoki_net_from_df(demo1_df, "./demo1-1/data/all_demo1-1")
+tes_demo1 = analyze_df(attendees, demo1)
+
+prefix = c("tei", "kom", "tok", "tom")
+suffix = c("pre", "mid", "pos")
+damerau_right = analyze_damerau_right_demo("./demo1-1/data", prefix, suffix)
+damerau_right_las = analyze_damerau_right_las_demo("./demo1-1/data", prefix, suffix)
+right = analyze_right("./demo1-1/data", prefix, suffix)
+right_las = analyze_right2("./demo1-1/data", prefix, suffix)
+
+conv(tes_df, tes_demo1)
+conv(tes_df, tes_df2)
+
+conv_ans(damerau_right_las)
+conv_ans(damerau_right)
+
+
+transpose(calculate_cor(tes_df, tes_demo1, damerau_right_las))
+transpose(calculate_cor(tes_df, tes_df2, damerau_right))
+calculate_cor(tes_df, tes_demo1, right_las)
+calculate_cor(tes_df, tes_df2, right)
+
+count_questions(attendees, read.csv("./demo1-1/data/demo1-1-qa.csv"), read.csv("./demo1-1/data/demo1-2-qacsv.csv"))
+count_answers(attendees, read.csv("./demo1-1/data/demo1-1-qa.csv"), read.csv("./demo1-1/data/demo1-2-qacsv.csv"))
+count_remarks(attendees, read.csv("./demo1-1/data/demo1-1-qa.csv"), read.csv("./demo1-1/data/demo1-2-qacsv.csv"))
+count_negative_words(attendees, read.csv("./demo1-1/data/demo1-1.csv"), read.csv("./demo1-1/data/demo1-2.csv"))
+```
+
+
+```{r}
+attendees = c("小林", "吉森", "安田")
+answer_morphenes_list = scan("./demo2/data/answer_like_morphenes.txt", character(), quote = "")
+prefix = c("kob", "yos", "yas")
+suffix = c("pre", "mid", "pos")
+ans_df = read.csv("./demo2/data/answer.csv")
+df = create_kyoki_net("./demo2/data/demo2-1.csv")
+tes_df = analyze_df(attendees, df)
+df2 = create_kyoki_net("./demo2/data/demo2-2.csv")
+tes_df2 = analyze_df(attendees, df2)
+
+demo1_1_df = read.csv("./demo2/data/demo2-1.csv")
+demo1_2_df = read.csv("./demo2/data/demo2-2.csv")
+demo1_df = rbind(demo1_1_df, demo1_2_df)
+demo1 = create_kyoki_net_from_df(demo1_df, "./demo2/data/all_demo2")
+tes_demo1 = analyze_df(attendees, demo1)
+
+damerau_right = analyze_damerau_right_demo("./demo2/data", prefix, suffix)
+damerau_right_las = analyze_damerau_right_las_demo("./demo2/data", prefix, suffix)
+right = analyze_right("./demo2/data", prefix, suffix)
+right_las = analyze_right2("./demo2/data", prefix, suffix)
+
+conv(tes_df, tes_demo1)
+conv(tes_df, tes_df2)
+
+conv_ans(damerau_right_las)
+conv_ans(damerau_right)
+
+transpose(calculate_cor(tes_df, tes_demo1, damerau_right_las))
+transpose(calculate_cor(tes_df, tes_df2, damerau_right))
+calculate_cor(tes_df, tes_demo1, right_las)
+calculate_cor(tes_df, tes_df2, right)
+
+count_questions(attendees, read.csv("./demo2/data/demo2-1-qa.csv"), read.csv("./demo2/data/demo2-2-qa.csv"))
+count_answers(attendees, read.csv("./demo1-1/data/demo1-1-qa.csv"), read.csv("./demo2/data/demo2-2-qa.csv"))
+count_remarks(attendees, read.csv("./demo2/data/demo2-1-qa.csv"), read.csv("./demo2/data/demo2-2-qa.csv"))
+count_negative_words(attendees, read.csv("./demo2/data/demo2-1.csv"), read.csv("./demo2/data/demo2-2.csv"))
+```
+
+
+
+```{r}
+answer_morphenes_list = scan("./exp1/answer_like_morphenes.txt", character(), quote = "")
+attendees = c("阿部", "石見", "佐久間")
+attendees_prefixes = list("阿部"="abe", "石見"="iwa", "佐久間"="sak")
+postfixes = c("pre", "mid", "pos")
+ans_df = read.csv("./exp1/answers/answer.csv")
+
+df = analyze_df(attendees, create_kyoki_net("./exp1/remarks/exp1-1.csv"))
+df2 = analyze_df(attendees, create_kyoki_net("./exp1/remarks/exp1-2.csv"))
+exp1 = analyze_df(attendees, create_kyoki_net_from_df(merge_df_from_path("./exp1/remarks/exp1-1.csv", "./exp1/remarks/exp1-2.csv"), "./exp1/remarks/all_exp1"))
+
+# qa_df = analyze_df(attendees, create_kyoki_net("./exp1/remarks/exp1-1-qa-joined.csv"))
+# qa_df_2 = analyze_df(attendees, create_kyoki_net("./exp1/remarks/exp1-2-qa-joined.csv"))
+# qa_exp1 = analyze_df(attendees, create_kyoki_net_from_df(merge_df_from_path("./exp1/remarks/exp1-1-qa-joined.csv", "./exp1/remarks/exp1-2-qa-joined.csv")))
+
+prefix = c("abe", "iwa", "sak")
+suffix = c("pre", "mid", "pos")
+
+damerau_right = analyze_damerau_right_exp("./exp1/answers", prefix, suffix)
+damerau_right_las = analyze_damerau_right_las_exp("./exp1/answers", prefix, suffix)
+right = analyze_right("./exp1/answers", prefix, suffix)
+right_las = analyze_right2("./exp1/answers", prefix, suffix)
+
+conv(df, exp1)
+conv(df, df2)
+
+conv_ans(damerau_right_las)
+conv_ans(damerau_right)
+
+analyze_damerau_right_pre_exp("./exp1/answers", prefix, suffix)
+analyze_damerau_right_las_exp("./exp1/answers", prefix, suffix)
+
+
+transpose(calculate_cor(df, exp1, damerau_right_las))
+#calculate_cor(qa_df, qa_exp1, damerau_right_las)
+transpose(calculate_cor(df, df2, damerau_right))
+#calculate_cor(qa_df, qa_df_2, damerau_right)
+
+calculate_cor(df, exp1, right_las)
+#calculate_cor(qa_df, qa_exp1, right_las)
+calculate_cor(df, df2, right)
+#calculate_cor(qa_df, qa_df_2, right)
+# 
+# analyze_important_words(attendees, read.csv("./exp1/remarks/exp1-1.csv"), read.csv("./exp1/remarks/exp1-2.csv"))
+# conv_ans(damerau_right_las)
+# conv_ans(damerau_right)
+# conv_ans(analyze_damerau_right_pre_exp("./exp1/answers", prefix, suffix))
+# 
+# count_questions(attendees, read.csv("./exp1/remarks/exp1-1-qa.csv"), read.csv("./exp1/remarks/exp1-2-qa.csv"))
+count_answers(attendees, read.csv("./exp1/remarks/exp1-1-qa.csv"), read.csv("./exp1/remarks/exp1-2-qa.csv"))
+
+count_negative_words(attendees, read.csv("./exp1/remarks/exp1-1.csv"), read.csv("./exp1/remarks/exp1-2.csv"))
+```
+
+```{r}
+answer_morphenes_list = scan("./exp2/answer_like_morphenes.txt", character(), quote = "")
+attendees = c("後藤", "佐野", "鳥越")
+attendees_prefixes = list("後藤"="got", "佐野"="san", "鳥越"="tor")
+postfixes = c("pre", "mid", "pos")
+ans_df = read.csv("./exp2/answers/answer.csv")
+
+df = analyze_df(attendees, create_kyoki_net("./exp2/remarks/exp2-1.csv"))
+df2 = analyze_df(attendees, create_kyoki_net("./exp2/remarks/exp2-2.csv"))
+exp1 = analyze_df(attendees, create_kyoki_net_from_df(merge_df_from_path("./exp2/remarks/exp2-1.csv", "./exp2/remarks/exp2-2.csv"), "./exp2/remarks/all_exp2"))
+
+# qa_df = analyze_df(attendees, create_kyoki_net("./exp2/remarks/exp2-1-qa-joined.csv"))
+# qa_df_2 = analyze_df(attendees, create_kyoki_net("./exp2/remarks/exp2-2-qa-joined.csv"))
+# qa_exp1 = analyze_df(attendees, create_kyoki_net_from_df(merge_df_from_path("./exp2/remarks/exp2-1-qa-joined.csv", "./exp2/remarks/exp2-2-qa-joined.csv")))
+  
+prefix = c("got", "san", "tor")
+suffix = c("pre", "mid", "pos")
+
+damerau_right = analyze_damerau_right_exp("./exp2/answers", prefix, suffix)
+damerau_right_las = analyze_damerau_right_las_exp("./exp2/answers", prefix, suffix)
+right = analyze_right("./exp2/answers", prefix, suffix)
+right_las = analyze_right2("./exp2/answers", prefix, suffix)
+
+conv(df, exp1)
+conv(df, df2)
+
+conv_ans(damerau_right_las)
+conv_ans(damerau_right)
+
+transpose(calculate_cor(df, exp1, damerau_right_las))
+#calculate_cor(qa_df, qa_exp1, damerau_right_las)
+transpose(calculate_cor(df, df2, damerau_right))
+#calculate_cor(qa_df, qa_df_2, damerau_right)
+
+calculate_cor(df, exp1, right_las)
+#calculate_cor(qa_df, qa_exp1, right_las)
+calculate_cor(df, df2, right)
+#calculate_cor(qa_df, qa_df_2, right)
+# 
+# analyze_important_words(attendees, read.csv("./exp2/remarks/exp2-1.csv"), read.csv("./exp2/remarks/exp2-2.csv"))
+# conv_ans(damerau_right_las)
+# conv_ans(damerau_right)
+# conv_ans(analyze_damerau_right_pre_exp("./exp2/answers", prefix, suffix))
+# 
+count_remarks(attendees, read.csv("./exp2/remarks/exp2-1-qa.csv"), read.csv("./exp2/remarks/exp2-2-qa.csv"))
+count_questions(attendees, read.csv("./exp2/remarks/exp2-1-qa.csv"), read.csv("./exp2/remarks/exp2-2-qa.csv"))
+count_answers(attendees, read.csv("./exp2/remarks/exp2-1-qa.csv"), read.csv("./exp2/remarks/exp2-2-qa.csv"))
+
+
+count_negative_words(attendees, read.csv("./exp2/remarks/exp2-1.csv"), read.csv("./exp2/remarks/exp2-2.csv"))
+
+```
+
+
+```{r}
+answer_morphenes_list = scan("./exp3/answer_like_morphenes.txt", character(), quote = "")
+attendees = c("石沢", "川田", "佐藤", "渡邊")
+attendees_prefixes = list("石沢"="isi", "川田"="kaw", "佐藤"="sat", "渡邊", "wat")
+postfixes = c("pre", "mid", "pos")
+ans_df = read.csv("./exp3/answers/answer.csv")
+
+df = analyze_df(attendees, create_kyoki_net("./exp3/remarks/exp3-1.csv"))
+df2 = analyze_df(attendees, create_kyoki_net("./exp3/remarks/exp3-2.csv"))
+exp1 = analyze_df(attendees, create_kyoki_net_from_df(merge_df_from_path("./exp3/remarks/exp3-1.csv", "./exp3/remarks/exp3-2.csv"), "./exp3/remarks/all_exp3"))
+
+# qa_df = analyze_df(attendees, create_kyoki_net("./exp3/remarks/exp3-1-qa-joined.csv"))
+# qa_df_2 = analyze_df(attendees, create_kyoki_net("./exp3/remarks/exp3-2-qa-joined.csv"))
+# qa_exp1 = analyze_df(attendees, create_kyoki_net_from_df(merge_df_from_path("./exp3/remarks/exp3-1-qa-joined.csv", "./exp3/remarks/exp3-2-qa-joined.csv")))
+
+prefix = c("isi", "kaw", "sat", "wat")
+suffix = c("pre", "mid", "pos")
+
+damerau_right = analyze_damerau_right_exp("./exp3/answers", prefix, suffix)
+damerau_right_las = analyze_damerau_right_las_exp("./exp3/answers", prefix, suffix)
+right = analyze_right("./exp3/answers", prefix, suffix)
+right_las = analyze_right2("./exp3/answers", prefix, suffix)
+
+nrow(read.csv("./exp3/remarks/exp3-1.csv")) + nrow(read.csv("./exp3/remarks/exp3-2.csv"))
+
+conv(df, exp1)
+conv(df, df2)
+
+conv_ans(damerau_right_las)
+conv_ans(damerau_right)
+
+transpose(calculate_cor(df, exp1, damerau_right_las))
+#calculate_cor(qa_df, qa_exp1, damerau_right_las)
+transpose(calculate_cor(df, df2, damerau_right))
+#calculate_cor(qa_df, qa_df_2, damerau_right)
+
+calculate_cor(df, exp1, right_las)
+#calculate_cor(qa_df, qa_exp1, right_las)
+calculate_cor(df, df2, right)
+#calculate_cor(qa_df, qa_df_2, right)
+# 
+# analyze_important_words(attendees, read.csv("./exp3/remarks/exp3-1.csv"), read.csv("./exp3/remarks/exp3-2.csv"))
+# conv_ans(damerau_right_las)
+# conv_ans(damerau_right)
+# conv_ans(analyze_damerau_right_pre_exp("./exp3/answers", prefix, suffix))
+# 
+count_remarks(attendees, read.csv("./exp3/remarks/exp3-1-qa.csv"), read.csv("./exp3/remarks/exp3-2-qa.csv"))
+count_questions(attendees, read.csv("./exp3/remarks/exp3-1-qa.csv"), read.csv("./exp3/remarks/exp3-2-qa.csv"))
+count_answers(attendees, read.csv("./exp3/remarks/exp3-1-qa.csv"), read.csv("./exp3/remarks/exp3-2-qa.csv"))
+
+count_negative_words(attendees, read.csv("./exp3/remarks/exp3-1.csv"), read.csv("./exp3/remarks/exp3-2.csv"))
+```
