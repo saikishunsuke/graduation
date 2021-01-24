@@ -1,6 +1,7 @@
 ```{r}
 answer_morphenes_list = scan("./demo1-1/data/answer_like_morphenes.txt", character(), quote = "")
 attendees = c("程", "小松", "徳永", "富田")
+attendees_fuseji = c("被験者A", "被験者B", "被験者C", "被験者D")
 attendees_prefixes = list("程"="tei", "小松"="kom", "徳永"="tok", "富田"="tom")
 postfixes = c("pre", "mid", "pos")
 ans_df = read.csv("./demo1-1/data/answer_demo1.csv")
@@ -29,6 +30,8 @@ conv(tes_df, tes_df2)
 conv_ans(damerau_right_las)
 conv_ans(damerau_right)
 
+conv_ans(analyze_damerau_right_pre_demo("./demo1-1/data", prefix, suffix))
+conv_ans(analyze_damerau_right_las_demo("./demo1-1/data", prefix, suffix))
 
 transpose(calculate_cor(tes_df, tes_demo1, damerau_right_las))
 transpose(calculate_cor(tes_df, tes_df2, damerau_right))
@@ -44,6 +47,7 @@ count_negative_words(attendees, read.csv("./demo1-1/data/demo1-1.csv"), read.csv
 
 ```{r}
 attendees = c("小林", "吉森", "安田")
+attendees_fuseji = c("被験者E", "被験者F", "被験者G")
 answer_morphenes_list = scan("./demo2/data/answer_like_morphenes.txt", character(), quote = "")
 prefix = c("kob", "yos", "yas")
 suffix = c("pre", "mid", "pos")
@@ -70,6 +74,11 @@ conv(tes_df, tes_df2)
 conv_ans(damerau_right_las)
 conv_ans(damerau_right)
 
+conv_ans(analyze_damerau_right_pre_demo("./demo2/data", prefix, suffix))
+
+conv_ans(analyze_damerau_right_las_demo("./demo2/data", prefix, suffix))
+
+
 transpose(calculate_cor(tes_df, tes_demo1, damerau_right_las))
 transpose(calculate_cor(tes_df, tes_df2, damerau_right))
 calculate_cor(tes_df, tes_demo1, right_las)
@@ -86,6 +95,7 @@ count_negative_words(attendees, read.csv("./demo2/data/demo2-1.csv"), read.csv("
 ```{r}
 answer_morphenes_list = scan("./exp1/answer_like_morphenes.txt", character(), quote = "")
 attendees = c("阿部", "石見", "佐久間")
+attendees_fuseji = c("被験者H", "被験者I", "被験者J")
 attendees_prefixes = list("阿部"="abe", "石見"="iwa", "佐久間"="sak")
 postfixes = c("pre", "mid", "pos")
 ans_df = read.csv("./exp1/answers/answer.csv")
@@ -115,7 +125,6 @@ conv_ans(damerau_right)
 analyze_damerau_right_pre_exp("./exp1/answers", prefix, suffix)
 analyze_damerau_right_las_exp("./exp1/answers", prefix, suffix)
 
-
 transpose(calculate_cor(df, exp1, damerau_right_las))
 #calculate_cor(qa_df, qa_exp1, damerau_right_las)
 transpose(calculate_cor(df, df2, damerau_right))
@@ -140,6 +149,7 @@ count_negative_words(attendees, read.csv("./exp1/remarks/exp1-1.csv"), read.csv(
 ```{r}
 answer_morphenes_list = scan("./exp2/answer_like_morphenes.txt", character(), quote = "")
 attendees = c("後藤", "佐野", "鳥越")
+attendees_fuseji = c("被験者K", "被験者L", "被験者M")
 attendees_prefixes = list("後藤"="got", "佐野"="san", "鳥越"="tor")
 postfixes = c("pre", "mid", "pos")
 ans_df = read.csv("./exp2/answers/answer.csv")
@@ -185,6 +195,9 @@ count_remarks(attendees, read.csv("./exp2/remarks/exp2-1-qa.csv"), read.csv("./e
 count_questions(attendees, read.csv("./exp2/remarks/exp2-1-qa.csv"), read.csv("./exp2/remarks/exp2-2-qa.csv"))
 count_answers(attendees, read.csv("./exp2/remarks/exp2-1-qa.csv"), read.csv("./exp2/remarks/exp2-2-qa.csv"))
 
+conv_ans(analyze_damerau_right_pre_exp("./exp2/answers", prefix, suffix))
+conv_ans(analyze_damerau_right_las_exp("./exp2/answers", prefix, suffix))
+
 
 count_negative_words(attendees, read.csv("./exp2/remarks/exp2-1.csv"), read.csv("./exp2/remarks/exp2-2.csv"))
 
@@ -194,6 +207,7 @@ count_negative_words(attendees, read.csv("./exp2/remarks/exp2-1.csv"), read.csv(
 ```{r}
 answer_morphenes_list = scan("./exp3/answer_like_morphenes.txt", character(), quote = "")
 attendees = c("石沢", "川田", "佐藤", "渡邊")
+attendees_fuseji = c("被験者N", "被験者O", "被験者P", "被験者Q")
 attendees_prefixes = list("石沢"="isi", "川田"="kaw", "佐藤"="sat", "渡邊", "wat")
 postfixes = c("pre", "mid", "pos")
 ans_df = read.csv("./exp3/answers/answer.csv")
@@ -240,6 +254,9 @@ calculate_cor(df, df2, right)
 count_remarks(attendees, read.csv("./exp3/remarks/exp3-1-qa.csv"), read.csv("./exp3/remarks/exp3-2-qa.csv"))
 count_questions(attendees, read.csv("./exp3/remarks/exp3-1-qa.csv"), read.csv("./exp3/remarks/exp3-2-qa.csv"))
 count_answers(attendees, read.csv("./exp3/remarks/exp3-1-qa.csv"), read.csv("./exp3/remarks/exp3-2-qa.csv"))
+
+conv_ans(analyze_damerau_right_pre_exp("./exp3/answers", prefix, suffix))
+conv_ans(analyze_damerau_right_las_exp("./exp3/answers", prefix, suffix))
 
 count_negative_words(attendees, read.csv("./exp3/remarks/exp3-1.csv"), read.csv("./exp3/remarks/exp3-2.csv"))
 ```

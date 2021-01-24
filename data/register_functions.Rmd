@@ -5,6 +5,9 @@ library(igraph)
 library(stringr)
 library(dplyr) # filter
 library(data.table)
+# install.packages("BiocManager") 
+# BiocManager::install("FELLA")
+library("FELLA")
 ```
 
 ```{r}
@@ -212,45 +215,34 @@ create_kyoki_net_from_df = function(remarks_df, path = NULL) {
     }
   }
   
-  # attendees = unique(remarks_df$attendee)
-
-  # attendees = c("程", "小松", "徳永", "富田")
-  # attendees_fuseji = c("A", "B", "C", "D")
-
-  # attendees = c("小林", "吉森", "安田")
-  # attendees_fuseji = c("E", "F", "G")
-  
-  attendees = c("阿部", "石見", "佐久間")
-  attendees_fuseji = c("被験者H", "被験者I", "被験者J")
-  
-  # attendees = c("後藤", "佐野", "鳥越")
-  # attendees_fuseji = c("K", "L", "M")
-  
-  # attendees = c("石沢", "川田", "佐藤", "渡邊")
-  # attendees_fuseji = c("N", "O", "P", "Q")
-  
+  add.vertex.shape("triangle", clip = shapes("circle")$clip, plot = FELLA:::mytriangle)
+  shape_pallet = c("circle", "square", "triangle")
   pallet = c("#86d99c", "#86a9d9", "#cd86d9", "#d9868c") 
   if(length(attendees) == 3){
-   pallet = c("#86d99c", "#86a9d9", "#cd86d9") 
+   # pallet = c("#86d99c", "#86a9d9", "#cd86d9")
+    pallet = c("#eeeeee", "#eaeaea", "#e8e8e8")
   }
   vertex_colors = c()
+  vertex_shapes = c()
   for(i in 1:nrow(remarks_df)){
     attendee = remarks_df[i,]$attendee
     vertex_colors = c(vertex_colors, pallet[match(attendee, attendees)])
+    vertex_shapes = c(vertex_shapes, shape_pallet[match(attendee, attendees)])
   }
   net <- graph_from_adjacency_matrix(as.matrix(adjacency_df) , mode="directed")
   V(net)$name = rownames(remarks_df)
   V(net)$label.cex = 1.5
   V(net)$color = vertex_colors
+  V(net)$shape = vertex_shapes
 
   if(!is.null(path)){
     simplified = delete.vertices(net, degree(net)==0)
     png.path = paste(path, ".png", sep="")
     png(png.path, width = 1000, height = 1000)
-    plot(simplified, vertex.size = 8, edge.arrow.size=0.8, edge.width=1, edge.curved=.1,  layout=layout_with_fr(simplified))
+    plot(simplified, vertex.size = 10, edge.arrow.size=0.8, edge.width=1, edge.curved=.1, vertex.label.color="black", layout=layout_with_fr(simplified))
     legend("topleft",bty = "n",
        legend=attendees_fuseji,
-       fill=pallet, border=NA, cex=2)
+       cex=3)
     dev.off()
   }
   bt = betweenness(net, directed = TRUE)
@@ -634,6 +626,29 @@ analyze_damerau_right_las_demo = function(data_dir, attendees_prefixes, suffixes
     }
   }
   return(tmp2las(tmp_df))
+}
+
+analyze_damerau_right_pre_demo = function(data_dir, attendees_prefixes, suffixes){
+  tmp_df = data.frame(matrix(ncol = 3, nrow = length(attendees_prefixes)))
+  colnames(tmp_df) = suffixes
+  rownames(tmp_df) = attendees_prefixes
+  sorted_ans_df = ans_df[order(ans_df$rank),]
+  for(a_pre in attendees_prefixes){
+    for(suf in suffixes){
+      file_path = paste(data_dir, "/", a_pre, "_", suf,".csv", sep="")
+      df = read.csv(file_path)
+      arr = c()
+      for(i in 1:nrow(df)){
+        ans_r = sorted_ans_df[i,]
+        item_name = toString(ans_r$item)
+        r = filter(df, item==item_name)
+        arr = c(arr, r$rank)
+      }
+      max_damerau = calc_damerau(c(length(arr):1))
+      tmp_df[a_pre, suf] = ((((calc_damerau(arr) * -1) + max_damerau)/max_damerau) + (sum(df$right) / length(arr))) / 2
+    }
+  }
+  return(tmp2pre(tmp_df))
 }
 ```
 
