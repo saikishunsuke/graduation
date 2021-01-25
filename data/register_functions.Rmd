@@ -7,7 +7,7 @@ library(dplyr) # filter
 library(data.table)
 # install.packages("BiocManager") 
 # BiocManager::install("FELLA")
-library("FELLA")
+# library("FELLA")
 ```
 
 ```{r}
@@ -215,8 +215,8 @@ create_kyoki_net_from_df = function(remarks_df, path = NULL) {
     }
   }
   
-  add.vertex.shape("triangle", clip = shapes("circle")$clip, plot = FELLA:::mytriangle)
-  shape_pallet = c("circle", "square", "triangle")
+  # add.vertex.shape("triangle", clip = shapes("circle")$clip, plot = FELLA:::mytriangle)
+  # shape_pallet = c("circle", "square", "triangle")
   pallet = c("#86d99c", "#86a9d9", "#cd86d9", "#d9868c") 
   if(length(attendees) == 3){
    # pallet = c("#86d99c", "#86a9d9", "#cd86d9")
@@ -227,23 +227,25 @@ create_kyoki_net_from_df = function(remarks_df, path = NULL) {
   for(i in 1:nrow(remarks_df)){
     attendee = remarks_df[i,]$attendee
     vertex_colors = c(vertex_colors, pallet[match(attendee, attendees)])
-    vertex_shapes = c(vertex_shapes, shape_pallet[match(attendee, attendees)])
+    # vertex_shapes = c(vertex_shapes, shape_pallet[match(attendee, attendees)])
   }
   net <- graph_from_adjacency_matrix(as.matrix(adjacency_df) , mode="directed")
-  V(net)$name = rownames(remarks_df)
+  # V(net)$name = rownames(remarks_df)
+  V(net)$name = remarks_df$attendee
   V(net)$label.cex = 1.5
   V(net)$color = vertex_colors
-  V(net)$shape = vertex_shapes
+  # V(net)$shape = vertex_shapes
 
   if(!is.null(path)){
     simplified = delete.vertices(net, degree(net)==0)
-    png.path = paste(path, ".png", sep="")
-    png(png.path, width = 1000, height = 1000)
-    plot(simplified, vertex.size = 10, edge.arrow.size=0.8, edge.width=1, edge.curved=.1, vertex.label.color="black", layout=layout_with_fr(simplified))
-    legend("topleft",bty = "n",
-       legend=attendees_fuseji,
-       cex=3)
-    dev.off()
+    print(table(V(simplified)$name))
+    # png.path = paste(path, ".png", sep="")
+    # png(png.path, width = 1000, height = 1000)
+    # plot(simplified, vertex.size = 10, edge.arrow.size=0.8, edge.width=1, edge.curved=.1, vertex.label.color="black", layout=layout_with_fr(simplified))
+    # legend("topleft",bty = "n",
+    #    legend=attendees_fuseji,
+    #    cex=3)
+    # dev.off()
   }
   bt = betweenness(net, directed = TRUE)
   out_deg = degree(net, mode="out")
