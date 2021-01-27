@@ -272,9 +272,9 @@ analyze_df = function(attendees, df){
   colnames(result_df) = c("betweenness", "outdegree", "indegree")
   for(a in attendees){
     target_df = filter(df, str_detect(attendee, pattern = a))
-    bet = mean(filter(target_df, betweenness>0)$betweenness)
-    out_deg = mean(filter(target_df, out_degree>0)$out_degree)
-    in_deg = mean(filter(target_df, in_degree>0)$in_degree)
+    bet = var(filter(target_df, betweenness>0)$betweenness)
+    out_deg = var(filter(target_df, out_degree>0)$out_degree)
+    in_deg = var(filter(target_df, in_degree>0)$in_degree)
     result_df[a,] = c(bet, out_deg, in_deg)
   }
   result_df[is.na(result_df)] <- 0

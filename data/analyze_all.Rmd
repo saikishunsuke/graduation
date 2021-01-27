@@ -100,6 +100,8 @@ attendees_prefixes = list("阿部"="abe", "石見"="iwa", "佐久間"="sak")
 postfixes = c("pre", "mid", "pos")
 ans_df = read.csv("./exp1/answers/answer.csv")
 
+create_kyoki_net("./exp1/remarks/exp1-1.csv")
+
 df = analyze_df(attendees, create_kyoki_net("./exp1/remarks/exp1-1.csv"))
 df2 = analyze_df(attendees, create_kyoki_net("./exp1/remarks/exp1-2.csv"))
 exp1 = analyze_df(attendees, create_kyoki_net_from_df(merge_df_from_path("./exp1/remarks/exp1-1.csv", "./exp1/remarks/exp1-2.csv"), "./exp1/remarks/all_exp1"))
